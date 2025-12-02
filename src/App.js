@@ -15,7 +15,7 @@ export default function App() {
 
   // --- FECHAS ---
   const hoy = new Date();
-  const [mesSeleccionado, setMesSeleccionado] = useState(hoy.getMonth());
+  const [mesSeleccionado, setMesSeleccionado] = useState(hoy.getMonth()); // Inicia en el mes actual
   const [anioSeleccionado, setAnioSeleccionado] = useState(hoy.getFullYear());
   const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const fechaEjemplo = (m) => `${anioSeleccionado}-${String(m+1).padStart(2,'0')}-05`;
@@ -55,7 +55,7 @@ export default function App() {
   const [modalPago, setModalPago] = useState(null);
   const [modalImg, setModalImg] = useState(null);
   const [modalMenu, setModalMenu] = useState(false);
-  const [modalAnual, setModalAnual] = useState(false); // Nuevo modal resumen anual
+  const [modalAnual, setModalAnual] = useState(false);
   const [vistaCat, setVistaCat] = useState(false);
   const [tab, setTab] = useState('gasto'); 
   const [filtro, setFiltro] = useState('todos');
@@ -95,7 +95,7 @@ export default function App() {
           setPagos(d.gastos); setIngresos(d.ingresos); setBackupDate('Recién restaurado'); alert("¡Datos restaurados!");
         }
       } catch(err) { alert("Archivo inválido"); }
-      setMenu(false);
+      setModalMenu(false);
     };
     reader.readAsText(file);
   };
@@ -242,7 +242,7 @@ export default function App() {
         <div className="p-4 pt-3">
           <div className="flex justify-between items-center mb-3">
             <div className="flex items-center gap-2">
-              <button onClick={()=>setMenu(true)} className="p-2 bg-gray-100 rounded-full"><Settings size={18}/></button>
+              <button onClick={()=>setModalMenu(true)} className="p-2 bg-gray-100 rounded-full"><Settings size={18}/></button>
               <div className="flex items-center bg-gray-50 rounded-lg px-2 border"><span className="text-[10px] font-bold uppercase mr-1 text-gray-400">Año</span><input type="number" value={anioSeleccionado} onChange={e=>setAnioSeleccionado(Number(e.target.value))} className="w-14 bg-transparent font-black text-center outline-none"/></div>
             </div>
             <div className="text-right"><button onClick={()=>setModalAnual(true)} className="text-[10px] font-bold text-blue-600 uppercase bg-blue-50 px-2 py-1 rounded border border-blue-100 flex items-center gap-1"><Calendar size={12}/> Resumen Anual</button></div>
@@ -416,6 +416,16 @@ export default function App() {
          </div>
       </div>}
 
+      {modalMenu && <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4" onClick={()=>setModalMenu(false)}>
+         <div className="bg-white w-full max-w-sm rounded-2xl p-6 space-y-3" onClick={e=>e.stopPropagation()}>
+            <h3 className="font-bold text-xl">Configuración</h3>
+            <p className="text-xs text-gray-400 mb-4 flex gap-1"><Clock size={12}/> Última copia: {backupDate}</p>
+            <button onClick={exportarDatos} className="w-full p-4 bg-blue-50 rounded-xl flex gap-3 items-center"><Download className="text-blue-600"/> <div className="text-left"><div className="font-bold">Guardar Copia</div><div className="text-xs text-gray-500">Descargar mis datos</div></div></button>
+            <div className="relative"><input type="file" ref={backupInput} hidden onChange={restoreBackup} accept=".json"/><button onClick={()=>backupInput.current.click()} className="w-full p-4 bg-green-50 rounded-xl flex gap-3 items-center"><Upload className="text-green-600"/> <div className="text-left"><div className="font-bold">Restaurar</div><div className="text-xs text-gray-500">Cargar archivo</div></div></button></div>
+            <button onClick={()=>setModalMenu(false)} className="w-full py-3 font-bold text-gray-400 mt-4">Cerrar</button>
+         </div>
+      </div>}
+
       {modalAnual && <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={()=>setModalAnual(false)}>
          <div className="bg-white w-full max-w-sm rounded-2xl p-6 space-y-4 animate-in slide-in-from-bottom-5" onClick={e=>e.stopPropagation()}>
             <div className="flex justify-between items-center"><h3 className="font-bold text-xl text-gray-800">Resumen {anioSeleccionado}</h3><button onClick={()=>setModalAnual(false)}><X/></button></div>
@@ -436,16 +446,6 @@ export default function App() {
                </div>
             </div>
             <button onClick={()=>setModalAnual(false)} className="w-full py-3 bg-gray-900 text-white font-bold rounded-xl">Entendido</button>
-         </div>
-      </div>}
-
-      {modalMenu && <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-4" onClick={()=>setModalMenu(false)}>
-         <div className="bg-white w-full max-w-sm rounded-2xl p-6 space-y-3" onClick={e=>e.stopPropagation()}>
-            <h3 className="font-bold text-xl">Configuración</h3>
-            <p className="text-xs text-gray-400 mb-4 flex gap-1"><Clock size={12}/> Última copia: {backupDate}</p>
-            <button onClick={exportarDatos} className="w-full p-4 bg-blue-50 rounded-xl flex gap-3 items-center"><Download className="text-blue-600"/> <div className="text-left"><div className="font-bold">Guardar Copia</div><div className="text-xs text-gray-500">Descargar mis datos</div></div></button>
-            <div className="relative"><input type="file" ref={backupInput} hidden onChange={restoreBackup} accept=".json"/><button onClick={()=>backupInput.current.click()} className="w-full p-4 bg-green-50 rounded-xl flex gap-3 items-center"><Upload className="text-green-600"/> <div className="text-left"><div className="font-bold">Restaurar</div><div className="text-xs text-gray-500">Cargar archivo</div></div></button></div>
-            <button onClick={()=>setModalMenu(false)} className="w-full py-3 font-bold text-gray-400 mt-4">Cerrar</button>
          </div>
       </div>}
 
