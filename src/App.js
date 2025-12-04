@@ -42,6 +42,7 @@ export default function App() {
       deudaActual: 1500000, 
       lineaCredito: 15000000,
       deudaTotal: 5000000, 
+      deudaSinInteres: 2000000, // Ejemplo
       gastosTarjeta: 0
     }];
   });
@@ -66,7 +67,7 @@ export default function App() {
   const [form, setForm] = useState({ 
     id:null, concepto:'', monto:'', fecha:'', categoria:'otros', 
     repetir:false, repetirMonto:true, modoEdit:'solo', 
-    pagoMinimo:0, deudaActual:0, deudaTotal:0, gastosTarjeta:0, lineaCredito:0 
+    pagoMinimo:0, deudaActual:0, deudaTotal:0, gastosTarjeta:0, lineaCredito:0, deudaSinInteres:0, deudaConInteres:0
   });
   const [pagoData, setPagoData] = useState({ fecha: '', metodo: '', comp: '', img: null });
   const fileInput = useRef(null);
@@ -134,7 +135,9 @@ export default function App() {
        deudaActual:parseFloat(form.deudaActual||0),
        deudaTotal:parseFloat(form.deudaTotal||0),
        gastosTarjeta:parseFloat(form.gastosTarjeta||0), 
-       lineaCredito:parseFloat(form.lineaCredito||0) 
+       lineaCredito:parseFloat(form.lineaCredito||0),
+       deudaSinInteres:parseFloat(form.deudaSinInteres||0),
+       deudaConInteres:parseFloat(form.deudaConInteres||0)
     };
 
     let newItems = [];
@@ -213,7 +216,9 @@ export default function App() {
         deudaActual: item.deudaActual || item.monto || 0,
         deudaTotal: deudaTot,
         gastosTarjeta: gastosT,
-        lineaCredito: item.lineaCredito || 0
+        lineaCredito: item.lineaCredito || 0,
+        deudaSinInteres: item.deudaSinInteres || 0,
+        deudaConInteres: item.deudaConInteres || 0
       });
       setModal(true);
   };
@@ -236,9 +241,11 @@ export default function App() {
         const pago = parseFloat(t.monto || 0);
         const minimo = parseFloat(t.pagoMinimo || 0);
         const gastos = parseFloat(t.gastosTarjeta || t.interes || 0);
+        const deudaSinInt = parseFloat(t.deudaSinInteres || 0);
         
         const disponible = linea > 0 ? linea - deudaTot : 0;
         const usoPorc = linea > 0 ? (deudaTot / linea) * 100 : 0;
+        const faltaPagar = Math.max(0, deudaMes - pago);
         
         let estadoPago = { color: 'bg-gray-100 text-gray-600', texto: 'Pendiente' };
         if (pago >= deudaMes && deudaMes > 0) estadoPago = { color: 'bg-green-100 text-green-700', texto: 'Pago Total' };
@@ -274,14 +281,28 @@ export default function App() {
                 <button onClick={()=>abrirEditar(t, 'gasto')} className="absolute top-2 right-2 p-2 bg-white/10 rounded-full hover:bg-white/20"><Pencil size={14}/></button>
              </div>
 
-             <div className="p-4 grid grid-cols-2 gap-4 text-sm">
-                <div><span className="text-[10px] text-gray-500 uppercase font-bold block mb-0.5">Deuda del Mes</span><span className="text-lg font-black text-gray-800">{fmt(deudaMes)}</span></div>
-                <div className="text-right"><span className="text-[10px] text-gray-500 uppercase font-bold block mb-0.5">Pago Planificado</span><span className={`text-lg font-black ${pago < deudaMes ? 'text-orange-600' : 'text-green-600'}`}>{fmt(pago)}</span></div>
-             </div>
-             
-             <div className="px-4 pb-4 pt-0 flex justify-between items-center text-xs border-t border-gray-50 mt-2 pt-2">
-                <div className="text-gray-500">Mínimo: <span className="font-bold text-gray-700">{fmt(minimo)}</span></div>
-                {gastos > 0 && <div className="text-red-500 font-bold bg-red-50 px-2 py-0.5 rounded flex items-center gap-1"><Receipt size={10}/> Gastos: {fmt(gastos)}</div>}
+             <div className="p-4 space-y-3 text-sm">
+                {/* Resumen Deuda Mes */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div><span className="text-[10px] text-gray-500 uppercase font-bold block mb-0.5">Deuda del Mes</span><span className="text-lg font-black text-gray-800">{fmt(deudaMes)}</span></div>
+                    <div className="text-right"><span className="text-[10px] text-gray-500 uppercase font-bold block mb-0.5">Pago Planificado</span><span className={`text-lg font-black ${pago < deudaMes ? 'text-orange-600' : 'text-green-600'}`}>{fmt(pago)}</span></div>
+                </div>
+                
+                {/* Alerta de Falta Pagar */}
+                {faltaPagar > 0 && (
+                    <div className="bg-red-50 border border-red-100 rounded-lg p-2 flex justify-between items-center animate-pulse">
+                        <span className="text-xs text-red-600 font-bold uppercase flex items-center gap-1"><AlertTriangle size={12}/> Falta cubrir mes:</span>
+                        <span className="text-sm font-black text-red-700">{fmt(faltaPagar)}</span>
+                    </div>
+                )}
+                
+                {/* Detalles */}
+                <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-gray-100">
+                     <div className="text-gray-500">Mínimo: <span className="font-bold text-gray-700">{fmt(minimo)}</span></div>
+                     {deudaSinInt > 0 && <div className="text-right text-green-600">Cuotas S/Int: <span className="font-bold">{fmt(deudaSinInt)}</span></div>}
+                </div>
+                
+                {gastos > 0 && <div className="text-[10px] text-red-500 font-bold flex justify-end items-center gap-1 bg-red-50 p-1 rounded"><Receipt size={10}/> Gastos Tarjeta: {fmt(gastos)}</div>}
              </div>
           </div>
         );
@@ -291,7 +312,11 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 font-sans text-gray-900">
+      {/* HEADER */}
       <div className="bg-white sticky top-0 z-20 border-b border-gray-100 shadow-sm">
+        {/* BARRA MOTIVACIONAL RESTAURADA */}
+        <div className={`px-4 py-2 text-xs font-bold text-center flex justify-center gap-2 ${mot.c}`}><Sparkles size={14}/> {mot.t}</div>
+        
         <div className="p-4 pt-3 pb-0">
           <div className="flex justify-between items-center mb-2">
             <div className="flex items-center gap-2">
@@ -400,6 +425,12 @@ export default function App() {
                         </div>
                      </div>
 
+                     {/* Desglose Deudas */}
+                     <div className="grid grid-cols-2 gap-2 pt-1 border-t border-blue-100/50">
+                        <div><label className="text-[9px] text-gray-500">Deuda C/ Interés</label><input type="number" className="w-full p-2 bg-white rounded border text-xs" value={form.deudaConInteres} onChange={e=>setForm({...form, deudaConInteres:e.target.value})}/></div>
+                        <div><label className="text-[9px] text-gray-500">Deuda S/ Interés (0%)</label><input type="number" className="w-full p-2 bg-white rounded border text-xs" value={form.deudaSinInteres} onChange={e=>setForm({...form, deudaSinInteres:e.target.value})}/></div>
+                     </div>
+
                      {/* Tu Pago */}
                      <div><label className="text-[10px] text-gray-500 uppercase font-bold">¿Cuánto vas a pagar?</label><input type="number" placeholder="Monto a pagar" className="w-full p-3 bg-white rounded border-2 border-green-500 font-bold text-lg text-green-700" value={form.monto} onChange={e=>setForm({...form, monto:e.target.value})}/></div>
                   </div>
@@ -432,6 +463,29 @@ export default function App() {
             <button onClick={exportarDatos} className="w-full p-4 bg-blue-50 rounded-xl flex gap-3 items-center"><Download className="text-blue-600"/> <div className="text-left"><div className="font-bold">Guardar Copia</div><div className="text-xs text-gray-500">Descargar mis datos</div></div></button>
             <div className="relative"><input type="file" ref={backupInput} hidden onChange={restoreBackup} accept=".json"/><button onClick={()=>backupInput.current.click()} className="w-full p-4 bg-green-50 rounded-xl flex gap-3 items-center"><Upload className="text-green-600"/> <div className="text-left"><div className="font-bold">Restaurar</div><div className="text-xs text-gray-500">Cargar archivo</div></div></button></div>
             <button onClick={()=>setModalMenu(false)} className="w-full py-3 font-bold text-gray-400 mt-4">Cerrar</button>
+         </div>
+      </div>}
+
+      {modalAnual && <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={()=>setModalAnual(false)}>
+         <div className="bg-white w-full max-w-sm rounded-2xl p-6 space-y-4 animate-in slide-in-from-bottom-5" onClick={e=>e.stopPropagation()}>
+            <div className="flex justify-between items-center"><h3 className="font-bold text-xl text-gray-800">Resumen {anioSeleccionado}</h3><button onClick={()=>setModalAnual(false)}><X/></button></div>
+            <div className="space-y-3 text-sm">
+               <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                  <p className="text-blue-800 font-bold text-xs uppercase mb-1">Gastos Fijos/Recurrentes</p>
+                  <p className="text-2xl font-black text-gray-800">Gs. {fmt(resumenAnual.gastosRecurrentes)}</p>
+                  <p className="text-xs text-gray-500 mt-1">Suma de alquileres, servicios, etc.</p>
+               </div>
+               <div className="bg-red-50 p-4 rounded-xl border border-red-100">
+                  <p className="text-red-800 font-bold text-xs uppercase mb-1">Gastos/Intereses Tarjetas</p>
+                  <p className="text-2xl font-black text-red-600">Gs. {fmt(resumenAnual.gastosTarjetasAnual)}</p>
+                  <p className="text-xs text-gray-500 mt-1">Dinero "perdido" en comisiones.</p>
+               </div>
+               <div className="p-3 bg-gray-50 rounded-lg text-xs text-gray-600 border border-gray-200">
+                  <div className="flex items-start gap-2"><Calculator size={16} className="mt-0.5 text-gray-400"/>
+                  <p>Si tus reintegros anuales no superan los <strong>Gs. {fmt(resumenAnual.gastosTarjetasAnual)}</strong>, estás perdiendo dinero con tus tarjetas.</p></div>
+               </div>
+            </div>
+            <button onClick={()=>setModalAnual(false)} className="w-full py-3 bg-gray-900 text-white font-bold rounded-xl">Entendido</button>
          </div>
       </div>}
 
